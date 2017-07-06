@@ -14,7 +14,7 @@ def close_parentheses_parser(data):
 def space_parser(data):
     space_value = re.findall("^\s+",data)
     space_len = len(space_value[0])
-    print("space length:",space_len)
+    #print("space length:",space_len)
     return data[:space_len],data[space_len:]
 
 def number_parser(data):
@@ -32,17 +32,23 @@ def number_parser(data):
         return [float(parse_num[0]), data[pos-4:].strip()]
 
 def statement_parser(data):
+    #'Parsed_data variable is just to display in the return type.'
     if(data[:6] == "define"):
         keyword.append("define")
+        parsed_data = data[:6]
         unparsed_data = data[6:]
         identifier_unparsed_data = space_parser(unparsed_data)
+        parsed_data += identifier_unparsed_data[0]
         key = identifier_parser(identifier_unparsed_data[1])
+        parsed_data += key[0]
         number_unparsed_data = space_parser(key[1])
+        parsed_data += number_unparsed_data[0]
         value = number_parser(number_unparsed_data[1])
+        parsed_data += str(value[0])
         print("the key is:",key)
         env[key[0]] = value[0]
         print("env is",env)
-    return [data[:6],value[1]]
+    return [parsed_data,value[1]]
     '''
     In the statement_parser return parsed data we are assigning only 'define'. Do we need to assign
     full expression
@@ -62,8 +68,11 @@ def statement_parser(data):
 def identifier_parser(data):
     print("input data for identifier_parser is:",data)
     id_index = data.find(" ")
-    print("id index is:",id_index)
-    return[data[:id_index],data[id_index:]]
+    identifier = data[:id_index]
+    if(identifier.isalpha()):
+        #print("id index is:",id_index)
+        return[identifier,data[id_index:]]
+    raise SyntaxError("Atleast one alpha character should present in identifier")
 
 def program_parser(data):
     parsers = [open_parentheses_parser, space_parser, 
@@ -83,6 +92,6 @@ if __name__ == '__main__':
     with open("text","r") as f:
         data = f.read()
     print("Input data is:",data)
-    print("input data type is:",type(data))
+    #print("input data type is:",type(data))
     Interpreter = program_parser(data)
-    print(Interpreter)
+    #print(Interpreter)
