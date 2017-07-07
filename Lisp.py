@@ -13,9 +13,12 @@ def close_parentheses_parser(data):
 
 def space_parser(data):
     space_value = re.findall("^\s+",data)
-    space_len = len(space_value[0])
-    #print("space length:",space_len)
-    return data[:space_len],data[space_len:]
+    if space_value:
+        space_len = len(space_value[0])
+        #print("space length:",space_len)
+        return data[:space_len],data[space_len:]
+    else:
+        return None,data
 
 def number_parser(data):
     parse_num = re.findall("^(-?(?:\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)",
@@ -32,23 +35,25 @@ def number_parser(data):
         return [float(parse_num[0]), data[pos-4:].strip()]
 
 def statement_parser(data):
-    #'Parsed_data variable is just to display in the return type.'
+    #'Parsed_data variable is just to display the first value in the return type.'
     if(data[:6] == "define"):
         keyword.append("define")
-        parsed_data = data[:6]
+        #parsed_data = data[:6]
         unparsed_data = data[6:]
         identifier_unparsed_data = space_parser(unparsed_data)
-        parsed_data += identifier_unparsed_data[0]
+        #parsed_data += identifier_unparsed_data[0]
         key = identifier_parser(identifier_unparsed_data[1])
-        parsed_data += key[0]
+        #parsed_data += key[0]
         number_unparsed_data = space_parser(key[1])
-        parsed_data += number_unparsed_data[0]
+        #parsed_data += number_unparsed_data[0]
         value = number_parser(number_unparsed_data[1])
-        parsed_data += str(value[0])
+        #parsed_data += str(value[0])
         print("the key is:",key)
         env[key[0]] = value[0]
         print("env is",env)
-    return [parsed_data,value[1]]
+        return [data[:6],value[1]]
+    else:
+        return [None,data]
     '''
     In the statement_parser return parsed data we are assigning only 'define'. Do we need to assign
     full expression
@@ -65,6 +70,9 @@ def statement_parser(data):
     have seperate parser for open and close paren
     do it in main 
     ''' 
+    '''
+
+    '''
 def identifier_parser(data):
     print("input data for identifier_parser is:",data)
     id_index = data.find(" ")
@@ -74,9 +82,30 @@ def identifier_parser(data):
         return[identifier,data[id_index:]]
     raise SyntaxError("Atleast one alpha character should present in identifier")
 
+def operator_parser(data):
+    if data[0] == "+":
+        parsed_data = plus_parser(data)
+    return[parsed_data[0],parsed_data[1]]
+
+def plus_parser(data):
+    if data[0] != "+":
+        return None
+    data = data[1:]
+    while data[0] != ")":
+        data = space_parser(data[1:])
+        number = number_parser(data[1])
+        data = space_parser(number[1])
+        number2 = number_parser(data[1])
+        value = number[0] + number2[0]
+        data = number2[1]
+    return[value,data]
+
+        
+    
+
 def program_parser(data):
     parsers = [open_parentheses_parser, space_parser, 
-              statement_parser,identifier_parser, close_parentheses_parser]
+              statement_parser,operator_parser, close_parentheses_parser]
     temp = 0
     parsed_data = open_parentheses_parser(data)
     if parsed_data:
@@ -87,11 +116,18 @@ def program_parser(data):
                 data = parsed_data[1]
                 print("remaining data are:",data)
             temp = temp + 1;
+        return parsed_data[0]
 
 if __name__ == '__main__':
-    with open("text","r") as f:
+    with open("text1","r") as f:
         data = f.read()
     print("Input data is:",data)
-    #print("input data type is:",type(data))
+    print("input data type is:",type(data))
+    '''
+    if(data.rstrip().isdigit()):
+        print("I am in isdigit")
+        numdata = int(data)
+    print("input data type is:",type(numdata))    
+    '''
     Interpreter = program_parser(data)
-    #print(Interpreter)
+    print("Final value:",Interpreter)
