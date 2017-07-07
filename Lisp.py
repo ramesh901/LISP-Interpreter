@@ -1,8 +1,23 @@
 import re
 import sys
+import operator
+
+operators = {
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+    "/": operator.truediv,
+    ">": operator.gt,
+    "<": operator.lt,
+    ">=": operator.ge,
+    "<=": operator.le,
+    "=": operator.eq
+}
 
 env = {}
 keyword = []
+
+
 def open_parentheses_parser(data):
     if data[0] == "(":
         return [data[0],data[1:]]
@@ -85,37 +100,59 @@ def identifier_parser(data):
 def operator_parser(data):
     if data[0] == "+":
         parsed_data = plus_parser(data)
-    return[parsed_data[0],parsed_data[1]]
+        return[parsed_data[0],parsed_data[1]]
 
 def plus_parser(data):
+    value = 0
+    number = None
+    number2 = None
     if data[0] != "+":
         return None
     data = data[1:]
-    while data[0] != ")":
+    while data[0] != ")" :
         data = space_parser(data[1:])
+        if(data[1][0] == "("):
+            print("assign prog parser to num1")
+            number = operator_parser(data[1][1:])
         number = number_parser(data[1])
         data = space_parser(number[1])
-        number2 = number_parser(data[1])
-        value = number[0] + number2[0]
+        if(data[1][0] == "("):
+            print("assign prog parser to num2")
+            number2 = operator_parser(data[1][1:])
+            print("num2 after prog parser",number2)
+        if not number2:
+            number2 = number_parser(data[1])
+        print("num1 int:",number[0])
+        print("num2 int:",number2[0])
+        value += number[0] + number2[0]
+        print("value",value)
         data = number2[1]
-    return[value,data]
+        data = data[1:]
+        if data is '':
+            return[value,'']
+        print("final data in plus is:",data)
+        print('len of data in plus:',len(data))
+
+    return[value,data[1:]]
 
         
     
 
 def program_parser(data):
     parsers = [open_parentheses_parser, space_parser, 
-              statement_parser,operator_parser, close_parentheses_parser]
+              statement_parser,operator_parser]
     temp = 0
     parsed_data = open_parentheses_parser(data)
     if parsed_data:
-        while data != ")":
+        while data != '':
             parsed_data = parsers[temp](data)
             if parsed_data:
                 print("parsed data are:",parsed_data[0])
                 data = parsed_data[1]
                 print("remaining data are:",data)
-            temp = temp + 1;
+            if(temp < 3):
+                temp = temp + 1;
+
         return parsed_data[0]
 
 if __name__ == '__main__':
