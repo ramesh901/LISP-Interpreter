@@ -1,6 +1,7 @@
 import re
 import sys
 import operator
+import functools
 
 operators = {
     "+": operator.add,
@@ -97,11 +98,17 @@ def identifier_parser(data):
         return[identifier,data[id_index:]]
     raise SyntaxError("Atleast one alpha character should present in identifier")
 
+def evaluate(data):
+    return functools.reduce(operators[data[0]],data[1:])
+    
+
 def operator_parser(data):
     if data[0] == "+":
         parsed_data = plus_parser(data)
         print("parsed data in OPERATOR PARSER:",parsed_data)
-        return[parsed_data[0],parsed_data[1]]
+        eval_data = evaluate(parsed_data[0])
+
+        return[eval_data,parsed_data[1]]
 
 def plus_parser(data):
     number = None
