@@ -39,7 +39,7 @@ def number_parser(data):
     parse_num = re.findall("^(-?(?:\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)",
                             data)
     if not parse_num:
-        return None
+        return [None,data]
     pos = len(str(parse_num))
     # if our parse_num is 123 then pos value comes as 7. 
     #It counts brackets and quotes also in the length as ['123'].
@@ -100,42 +100,62 @@ def identifier_parser(data):
 def operator_parser(data):
     if data[0] == "+":
         parsed_data = plus_parser(data)
+        print("parsed data in OPERATOR PARSER:",parsed_data)
         return[parsed_data[0],parsed_data[1]]
 
 def plus_parser(data):
-    value = 0
     number = None
-    number2 = None
+    parsed_array = []
     if data[0] != "+":
         return None
+    parsed_array.append(data[0])
+    print("parsed array adding plus is:",parsed_array)
     data = data[1:]
+    print("input data for space parser in plus_parser",data)
+    
     while data[0] != ")" :
-        data = space_parser(data[1:])
+
+        print("Data in while loop:",data)
+        data = space_parser(data)
         if(data[1][0] == "("):
-            print("assign prog parser to num1")
             number = operator_parser(data[1][1:])
-        number = number_parser(data[1])
+            print("OPERATOR PARSER to num1",number)
+        else:
+            number = number_parser(data[1])
+            print("assign number to number directly",number)
+        print("number is:",number)
         data = space_parser(number[1])
+        '''
         if(data[1][0] == "("):
-            print("assign prog parser to num2")
+            print("assign operator parser to num2")
             number2 = operator_parser(data[1][1:])
             print("num2 after prog parser",number2)
-        if not number2:
-            number2 = number_parser(data[1])
-        print("num1 int:",number[0])
-        print("num2 int:",number2[0])
+        number2 = number_parser(data[1])
+        print("num1 int:",number)
+        print("num2 int:",number2)
         value += number[0] + number2[0]
-        print("value",value)
-        data = number2[1]
-        data = data[1:]
+        '''
+        parsed_array.append(number[0])
+        parse = parsed_array
+        print("parsed array in plus is:",parsed_array)
+        #data = data[1:]
         if data is '':
-            return[value,'']
-        print("final data in plus is:",data)
+            return[parse,'']
+        print("final data in plus is:",parse,"and",data)
         print('len of data in plus:',len(data))
+        data = data[1]
 
-    return[value,data[1:]]
+    return [parse, data[1:]]
 
-        
+def  expression_parser(data):
+    parsers = [number_parser,operator_parser]
+    for parser in parsers:
+        output = parser(data)
+        if output != null:
+            return output
+
+
+         
     
 
 def program_parser(data):
@@ -150,8 +170,10 @@ def program_parser(data):
                 print("parsed data are:",parsed_data[0])
                 data = parsed_data[1]
                 print("remaining data are:",data)
+            if(temp == 3):
+                temp = -1
             if(temp < 3):
-                temp = temp + 1;
+                temp = temp + 1
 
         return parsed_data[0]
 
