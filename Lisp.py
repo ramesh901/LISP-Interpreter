@@ -15,20 +15,23 @@ operators = {
     "=": operator.eq
 }
 
-env = {}
+env = {'a': 547.0}
 keyword = []
 
 
 def open_parentheses_parser(data):
+    #print("enter open paranethesis",data)
     if data[0] == "(":
         return [data[0],data[1:]]
  
 def close_parentheses_parser(data):
     if data[0] == ")":
         return [data[0],data[1:]]
+    else:
+    	return [None,data]
 
 def space_parser(data):
-    space_value = re.findall("^\s+",data)
+    space_value = re.findall("^[\s\n]",data)
     if space_value:
         space_len = len(space_value[0])
         #print("space length:",space_len)
@@ -59,15 +62,22 @@ def statement_parser(data):
         identifier_unparsed_data = space_parser(unparsed_data)
         #parsed_data += identifier_unparsed_data[0]
         key = identifier_parser(identifier_unparsed_data[1])
+        #print("the key is:",key)
         #parsed_data += key[0]
         number_unparsed_data = space_parser(key[1])
         #parsed_data += number_unparsed_data[0]
         value = number_parser(number_unparsed_data[1])
+        if value[0] == None:
+            #print("entering op parser")
+            value = open_parentheses_parser(value[1])
+            value = operator_parser(value[1])
         #parsed_data += str(value[0])
-        print("the key is:",key)
+        
         env[key[0]] = value[0]
-        print("env is",env)
-        return [data[:6],value[1]]
+        #print("env is",env)
+        value = space_parser(value[1])
+        value = close_parentheses_parser(value[1])
+        return [env,value[1]]
     else:
         return [None,data]
     '''
@@ -90,9 +100,13 @@ def statement_parser(data):
 
     '''
 def identifier_parser(data):
-    print("input data for identifier_parser is:",data)
+    #print("input data for identifier_parser is:",data)
     id_index = data.find(" ")
+    index_temp = data.find(")")
+    if id_index > index_temp:
+        id_index = index_temp
     identifier = data[:id_index]
+    print("identifier is:",identifier)
     if(identifier.isalpha()):
         #print("id index is:",id_index)
         return[identifier,data[id_index:]]
@@ -109,10 +123,13 @@ def operator_parser(data):
     if data[0] == "*":
         parsed_data = multiply_parser(data)
     '''
-    if data[0] in ("+","-","*","/"):
+    if data[0] not in ("+","-","*","/"):
+        return[None,data]
+    else:
         parsed_data = arithmetic_parser(data)
-    print("parsed data in OPERATOR PARSER:",parsed_data)
-    eval_data = evaluate(parsed_data[0])
+        #print("parsed data in OPERATOR PARSER:",parsed_data)
+        eval_data = evaluate(parsed_data[0])
+
 
     return[eval_data,parsed_data[1]]
 
@@ -120,28 +137,33 @@ def arithmetic_parser(data):
     number = None
     parsed_array = []
     parsed_array.append(data[0])
-    print("parsed array adding multiply is:",parsed_array)
+    #print("parsed array adding multiply is:",parsed_array)
     data = data[1:]
-    print("input data for space parser in multiply_parser",data)
+    #print("input data for space parser in multiply_parser",data)
     while data[0] != ")" :
-        print("Data in while loop:",data)
+        #print("Data in while loop:",data)
         data = space_parser(data)
         if(data[1][0] == "("):
             number = operator_parser(data[1][1:])
-            print("OPERATOR PARSER to num1",number)
+            #print("OPERATOR PARSER to num1",number)
         else:
             number = number_parser(data[1])
-            print("assign number to number directly",number)
-        print("number is:",number)
+            #print("assign number to number directly",number)
+            if number[0] is None:
+                key = identifier_parser(data[1])
+                #print("key is",key)
+                number[0] = env[key[0]]
+                number[1] = key[1]
+        #print("number is:",number)
         data = space_parser(number[1])
         parsed_array.append(number[0])
         parse = parsed_array
-        print("parsed array in multiply is:",parsed_array)
+        #print("parsed array in multiply is:",parsed_array)
         #data = data[1:]
         if data is '':
             return[parse,'']
-        print("final data in multiply is:",parse,"and",data)
-        print('len of data in multiply:',len(data))
+        #print("final data in multiply is:",parse,"and",data)
+        #print('len of data in multiply:',len(data))
         data = data[1]
 
     return [parse, data[1:]]
@@ -166,13 +188,17 @@ def program_parser(data):
         while data != '':
             parsed_data = parsers[temp](data)
             if parsed_data:
+                print("temp value:",temp)
                 print("parsed data are:",parsed_data[0])
                 data = parsed_data[1]
                 print("remaining data are:",data)
-            if(temp == 3):
+            if(temp == 3): 
+                data = space_parser(data)
+                data = data[1]
                 temp = -1
-            if(temp < 3):
-                temp = temp + 1
+            #print("temp before reset",temp)
+            if(temp < 3): temp = temp + 1
+            #print("temp after reset",temp)
 
         return parsed_data[0]
 
