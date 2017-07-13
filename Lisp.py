@@ -86,6 +86,11 @@ def parse_lambda(data):
     if data.startswith('lambda'):
         return ['lambda',data[6:]]
 
+def parse_print(data):
+    #print("entering parse_lambda",data)
+    if data.startswith('print'):
+        return ['print',data[5:]]
+
 def arguments_parser(data):
     result = []
     output = open_parentheses_parser(data)
@@ -158,62 +163,54 @@ def lambda_parser(data):
         unparsed = output[1]
         #print("unparsed in lambda_parser",unparsed)
         return [obj, unparsed]
+    return [None,data]
+
+def parser_factory(data,*parsers):
+    for parser in parsers:
+        output = parser(data)
+        if output is not None:
+            return output
     return None
 
+def print_parser(data):
+    output = all_parsers(data,open_parentheses_parser, parse_print, 
+                         space_parser, expression_parser,
+                         close_parentheses_parser)
+    #print("entering lambda and output is",output)
+    if output is not None:
+        value = output[0][3]
+        unparsed = output[1]
+        #print("unparsed in lambda_parser",unparsed)
+        return [value, unparsed]
+    return None
 
+def check_type(data,env):
+    if isinstance(data,str):
+        if env is not None:
+            data = env[data]
+    elif ENV[data] is not None:
+        input = ENV[input]
+    elif (ENV[data] is None):
+        raise SyntaxError("input is undefined")
+    '''pass
+const checkType = (input, env) => {
+  if (typeof input === 'string') {
+    if (env !== undefined) {
+      if (env[input] !== undefined) input = env[input]
+    } else if (ENV[input] !== undefined) {
+      input = ENV[input]
+    } else if (ENV[input] === undefined) throw new Error(`${input} is undefined`)
+  }
+  return input
+}'''
 
-def statement_parser(data):
-    #'Parsed_data variable is just to display the first value in the return type.'
-
-    if data[:6] == "define":
-        keyword.append("define")
-        #parsed_data = data[:6]
-        unparsed_data = data[6:]
-        identifier_unparsed_data = space_parser(unparsed_data)
-        #parsed_data += identifier_unparsed_data[0]
-        key = identifier_parser(identifier_unparsed_data[1])
-        #print("the key is:",key)
-        #parsed_data += key[0]
-        number_unparsed_data = space_parser(key[1])
-        #parsed_data += number_unparsed_data[0]
-        value = lambda_parser(number_unparsed_data[1])
-        #print("value after lambda",value)
-        if value[0] is None:
-            value = number_parser(number_unparsed_data[1])
-        if value[0] is None:
-            #print("entering op parser")
-            value = open_parentheses_parser(value[1])
-            value = operator_parser(value[1])
-        #parsed_data += str(value[0])
-        
-        env[key[0]] = value[0]
-        #print("env is",env)
-        value = space_parser(value[1])
-        #print("value before close para:",value)
-        value = close_parentheses_parser(value[1])
-        return [env,value[1]]
+def  iffun(a,b,c):
+    if a:
+        return b
     else:
-        #print("enter else in statement")
-        return [None,None]
-    '''
-    In the statement_parser return parsed data we are assigning only 'define'. Do we need to assign
-    full expression
-    '''
-    '''
-    association of key and value happen within define parser. finally append to global ENV.
-    
-    a = key
-    10 = value
-    env[a] = 10
-    env = {a: 10}
-    
-    
-    have seperate parser for open and close paren
-    do it in main 
-    ''' 
-    '''
+        return c
 
-    '''
+
 def identifier_parser(data):
     #print("input data for identifier_parser is:",data)
     id_index = data.find(" ")
@@ -287,23 +284,100 @@ def  expression_parser(data):
     parsers = [number_parser,operator_parser]
     for parser in parsers:
         output = parser(data)
-        if output != null:
+        if output is not None:
             return output
 
 
          
+def  parser_factory(data,*parsers):
+    for parser in parsers:
+        output = parser(data)
+        if (output is not None):
+            return output
     
+    
+def statement_parser(data):
+    #parser_factory(data,define_parser, print_parser)
+    parsers = [define_parser, print_parser]
+    #'Parsed_data variable is just to display the first value in the return type.'
+    for parser in parsers:
+        output = parser(data)
+        if (output is not None):
+            return output
+
+def define_parser(data):
+    if data[:6] == "define":
+        #keyword.append("define")
+        #parsed_data = data[:6]
+        unparsed_data = data[6:]
+        identifier_unparsed_data = space_parser(unparsed_data)
+        #parsed_data += identifier_unparsed_data[0]
+        key = identifier_parser(identifier_unparsed_data[1])
+        print("the key is:",key)
+        #parsed_data += key[0]
+        number_unparsed_data = space_parser(key[1])
+        #parsed_data += number_unparsed_data[0]
+        value = lambda_parser(number_unparsed_data[1])
+        #print("value after lambda",value)
+        if value[0] is None:
+            value = number_parser(number_unparsed_data[1])
+        if value[0] is None:
+            #print("entering op parser")
+            value = open_parentheses_parser(value[1])
+            value = operator_parser(value[1])
+        #parsed_data += str(value[0])
+        
+        env[key[0]] = value[0]
+        print("env is",env)
+        value = space_parser(value[1])
+        print("value before close para:",value)
+        value = close_parentheses_parser(value[1])
+        value = space_parser(value[1])
+        print("value in define:",value)
+        return [env,value[1]]
+    else:
+        #print("enter else in statement")
+        return [None]
+    '''
+    In the statement_parser return parsed data we are assigning only 'define'. Do we need to assign
+    full expression
+    '''
+    '''
+    association of key and value happen within define parser. finally append to global ENV.
+    
+    a = key
+    10 = value
+    env[a] = 10
+    env = {a: 10}
+    
+    
+    have seperate parser for open and close paren
+    do it in main 
+    ''' 
+    '''
+
+    '''
 
 def program_parser(data):
+    '''
+    while data != '' and data is not None:
+        output = ''
+        output = space_parser(data)
+        if output is not None:
+            data = output[1]
+        output = statement_parser(data)
+        data = output
+        '''
     parsers = [open_parentheses_parser, space_parser, 
               statement_parser,operator_parser]
+    
     temp = 0
     parsed_data = open_parentheses_parser(data)
     if parsed_data:
         while data != '':
             parsed_data = parsers[temp](data)
             if parsed_data:
-                #print("temp value:",temp)
+                print("temp value:",temp)
                 print("parsed data are:",parsed_data[0])
                 data = parsed_data[1]
                 #print("remaining data are:",data)
@@ -311,9 +385,10 @@ def program_parser(data):
                 data = space_parser(data)
                 data = data[1]
                 temp = -1
-            #print("temp before reset",temp)
+            print("temp before reset",temp)
             if(temp < 3): temp = temp + 1
-            #print("temp after reset",temp)
+            print("temp after reset",temp)
+            
 
         return parsed_data[0]
 
