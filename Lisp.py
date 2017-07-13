@@ -16,8 +16,6 @@ operators = {
 }
 
 env = {}
-keyword = []
-
 
 def open_parentheses_parser(data):
     #print("enter open paranethesis",data)
@@ -28,9 +26,7 @@ def close_parentheses_parser(data):
     #print("data in close para:",data)
     if data[0] == ")":
         return [data[0],data[1:]]
-    else:
-        return [None,data]
-
+    
 def space_parser(data):
     space_value = re.findall("^[\s\n]",data)
     if space_value:
@@ -38,7 +34,7 @@ def space_parser(data):
         #print("space length:",space_len)
         return data[:space_len],data[space_len:]
     else:
-        return None,data
+        return [None,data]
 
 def number_parser(data):
     parse_num = re.findall("^(-?(?:\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)",
@@ -53,22 +49,7 @@ def number_parser(data):
         return [int(parse_num[0]), data[pos-4:].strip()]
     except ValueError:
         return [float(parse_num[0]), data[pos-4:].strip()]
-'''
-const lambdaParser = input => {
-  let output = allParsers(openBracket, parseLambda, spaceParser, argumentsParser,
-                          spaceParser, bodyParser, closeBracket)(input)
-  if (output !== null) {
-    let [[, , , args, , body], rest] = output
-    let obj = {
-      type: 'lambda',
-      args: args,
-      body: body,
-      env: {}
-    }
-    return [obj, rest]
-  }
-  return null
-}'''
+
 def all_parsers(data,*parsers):
     result = []
     #print("entering all_parser",data,"and parsers are:",parsers)
@@ -105,23 +86,6 @@ def arguments_parser(data):
         output = space_parser(output[1])
     #print("output of arg parser:",result,"and",output[1])
     return [result,output[1]]
-'''
-const bodyParser = input => {
-  let output = openBracket(input)
-  input = output[1]
-  let body = '('
-  let i = 1
-  let j = 0
-  let k = 0
-  while (i !== j) {
-    if (input[k] === '(') i++
-    if (input[k] === ')') j++
-    body = body + input[k]
-    k++
-  }
-  input = input.substring(k)
-  return [body, input]
-}'''
 
 def body_parser(data):
     output = open_parentheses_parser(data)
@@ -137,14 +101,6 @@ def body_parser(data):
         pos += 1
     #print("output of body_parser",body,"and",value[pos:])
     return [body,value[pos:]]
-
-
-
-        
-
-
-
-    
 
 def lambda_parser(data):
     output = all_parsers(data,open_parentheses_parser, parse_lambda, 
@@ -172,8 +128,6 @@ def parser_factory(data,*parsers):
             return output
     return None
 
-
-
 def check_type(data,env):
     if isinstance(data,str):
         if env is not None:
@@ -182,24 +136,6 @@ def check_type(data,env):
         input = ENV[input]
     elif (ENV[data] is None):
         raise SyntaxError("input is undefined")
-    '''pass
-const checkType = (input, env) => {
-  if (typeof input === 'string') {
-    if (env !== undefined) {
-      if (env[input] !== undefined) input = env[input]
-    } else if (ENV[input] !== undefined) {
-      input = ENV[input]
-    } else if (ENV[input] === undefined) throw new Error(`${input} is undefined`)
-  }
-  return input
-}'''
-
-def  iffun(a,b,c):
-    if a:
-        return b
-    else:
-        return c
-
 
 def identifier_parser(data):
     #print("input data for identifier_parser is:",data)
@@ -217,22 +153,13 @@ def identifier_parser(data):
 def evaluate(data):
     return functools.reduce(operators[data[0]],data[1:])
     
-
 def operator_parser(data):
-    '''
-    if data[0] == "+":
-        parsed_data = plus_parser(data)
-    if data[0] == "*":
-        parsed_data = multiply_parser(data)
-    '''
     if data[0] not in ("+","-","*","/"):
         return[None,data]
     else:
         parsed_data = arithmetic_parser(data)
         #print("parsed data in OPERATOR PARSER:",parsed_data)
         eval_data = evaluate(parsed_data[0])
-
-
     return[eval_data,parsed_data[1]]
 
 def arithmetic_parser(data):
@@ -267,19 +194,16 @@ def arithmetic_parser(data):
         #print("final data in multiply is:",parse,"and",data)
         #print('len of data in multiply:',len(data))
         data = data[1]
-
     return [parse, data[1:]]
 
-def  expression_parser(data):
+def expression_parser(data):
     parsers = [number_parser,operator_parser]
     for parser in parsers:
         output = parser(data)
         if output is not None:
             return output
 
-
-         
-def  parser_factory(data,*parsers):
+def parser_factory(data,*parsers):
     for parser in parsers:
         output = parser(data)
         if (output is not None):
@@ -327,8 +251,6 @@ def  print_parser(data):
         #print("value in PRINT",value)
     return [result,value[1]]
 
-
-
 def define_parser(data):
     if data[:6] == "define":
         #keyword.append("define")
@@ -350,7 +272,6 @@ def define_parser(data):
             value = open_parentheses_parser(value[1])
             value = operator_parser(value[1])
         #parsed_data += str(value[0])
-        
         env[key[0]] = value[0]
         #print("env is",env)
         value = space_parser(value[1])
@@ -365,36 +286,11 @@ def define_parser(data):
     '''
     In the statement_parser return parsed data we are assigning only 'define'. Do we need to assign
     full expression
-    '''
-    '''
-    association of key and value happen within define parser. finally append to global ENV.
-    
-    a = key
-    10 = value
-    env[a] = 10
-    env = {a: 10}
-    
-    
-    have seperate parser for open and close paren
-    do it in main 
-    ''' 
-    '''
-
-    '''
+    '''   
 
 def program_parser(data):
-    '''
-    while data != '' and data is not None:
-        output = ''
-        output = space_parser(data)
-        if output is not None:
-            data = output[1]
-        output = statement_parser(data)
-        data = output
-        '''
     parsers = [open_parentheses_parser, space_parser, 
               statement_parser,operator_parser]
-    
     temp = 0
     parsed_data = open_parentheses_parser(data)
     if parsed_data:
@@ -415,7 +311,7 @@ def program_parser(data):
             #print("temp before reset",temp)
             if(temp < 3): temp = temp + 1
             #print("temp after reset",temp)
-            
+      
 
         return parsed_data[0]
 
@@ -424,11 +320,5 @@ if __name__ == '__main__':
         data = f.read()
     print("Input data is:",data)
     print("input data type is:",type(data))
-    '''
-    if(data.rstrip().isdigit()):
-        print("I am in isdigit")
-        numdata = int(data)
-    print("input data type is:",type(numdata))    
-    '''
     Interpreter = program_parser(data)
     #print("Final value:",Interpreter)
