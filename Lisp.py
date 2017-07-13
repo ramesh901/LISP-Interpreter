@@ -238,12 +238,18 @@ def  print_parser(data):
         value = space_parser(unparsed_data)
         #print("value in print parser",value)
         value = number_parser(value[1])
-        if value[0] is None:
-            #print("entering op parser")
+        if value[0] is None and value[1][0] == "(":
+            print("entering op parser",value)
             value = open_parentheses_parser(value[1])
             value = operator_parser(value[1])
+        if value[0] is None:
+            print("entering id parser",value)
+            value = identifier_parser(value[1])
+            value[0] = env[value[0]]
+
         result = value[0]
-        #print("VALUE IN PRINT PARSER",result)
+        print("VALUE IN PRINT PARSER",result)
+        #print("env in print_parser",env)
         value = space_parser(value[1])
         #print("value before close para:",value)
         value = close_parentheses_parser(value[1])
