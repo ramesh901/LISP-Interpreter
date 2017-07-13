@@ -172,17 +172,7 @@ def parser_factory(data,*parsers):
             return output
     return None
 
-def print_parser(data):
-    output = all_parsers(data,open_parentheses_parser, parse_print, 
-                         space_parser, expression_parser,
-                         close_parentheses_parser)
-    #print("entering lambda and output is",output)
-    if output is not None:
-        value = output[0][3]
-        unparsed = output[1]
-        #print("unparsed in lambda_parser",unparsed)
-        return [value, unparsed]
-    return None
+
 
 def check_type(data,env):
     if isinstance(data,str):
@@ -302,8 +292,42 @@ def statement_parser(data):
     #'Parsed_data variable is just to display the first value in the return type.'
     for parser in parsers:
         output = parser(data)
-        if (output is not None):
+        if (output[0] is not None):
             return output
+'''
+def print_parser(data):
+    output = all_parsers(data,parse_print, 
+                         space_parser, expression_parser,
+                         close_parentheses_parser)
+    #print("entering lambda and output is",output)
+    if output is not None:
+        value = output[0][3]
+        unparsed = output[1]
+        #print("unparsed in lambda_parser",unparsed)
+        return [value, unparsed]
+    return None
+'''
+
+def  print_parser(data):
+    if data[:5] == "print":
+        unparsed_data = data[5:]
+        value = space_parser(unparsed_data)
+        #print("value in print parser",value)
+        value = number_parser(value[1])
+        if value[0] is None:
+            #print("entering op parser")
+            value = open_parentheses_parser(value[1])
+            value = operator_parser(value[1])
+        result = value[0]
+        #print("VALUE IN PRINT PARSER",result)
+        value = space_parser(value[1])
+        #print("value before close para:",value)
+        value = close_parentheses_parser(value[1])
+        value = space_parser(value[1])
+        #print("value in PRINT",value)
+    return [result,value[1]]
+
+
 
 def define_parser(data):
     if data[:6] == "define":
@@ -313,7 +337,7 @@ def define_parser(data):
         identifier_unparsed_data = space_parser(unparsed_data)
         #parsed_data += identifier_unparsed_data[0]
         key = identifier_parser(identifier_unparsed_data[1])
-        print("the key is:",key)
+        #print("the key is:",key)
         #parsed_data += key[0]
         number_unparsed_data = space_parser(key[1])
         #parsed_data += number_unparsed_data[0]
@@ -328,12 +352,12 @@ def define_parser(data):
         #parsed_data += str(value[0])
         
         env[key[0]] = value[0]
-        print("env is",env)
+        #print("env is",env)
         value = space_parser(value[1])
-        print("value before close para:",value)
+        #print("value before close para:",value)
         value = close_parentheses_parser(value[1])
         value = space_parser(value[1])
-        print("value in define:",value)
+        #print("value in define:",value)
         return [env,value[1]]
     else:
         #print("enter else in statement")
@@ -376,24 +400,27 @@ def program_parser(data):
     if parsed_data:
         while data != '':
             parsed_data = parsers[temp](data)
+            #print("PARSED DATA FULL:",parsed_data)
             if parsed_data:
-                print("temp value:",temp)
-                print("parsed data are:",parsed_data[0])
+                #print("temp value:",temp)
+                #print("parser is",parsers[temp])
+                if parsed_data[0] not in ("(", None):
+                    print("parsed data are:",parsed_data[0])
                 data = parsed_data[1]
                 #print("remaining data are:",data)
             if(temp == 3): 
                 data = space_parser(data)
                 data = data[1]
                 temp = -1
-            print("temp before reset",temp)
+            #print("temp before reset",temp)
             if(temp < 3): temp = temp + 1
-            print("temp after reset",temp)
+            #print("temp after reset",temp)
             
 
         return parsed_data[0]
 
 if __name__ == '__main__':
-    with open("text1","r") as f:
+    with open("text","r") as f:
         data = f.read()
     print("Input data is:",data)
     print("input data type is:",type(data))
@@ -404,4 +431,4 @@ if __name__ == '__main__':
     print("input data type is:",type(numdata))    
     '''
     Interpreter = program_parser(data)
-    print("Final value:",Interpreter)
+    #print("Final value:",Interpreter)
