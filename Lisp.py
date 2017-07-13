@@ -245,6 +245,9 @@ def  print_parser(data):
         if value[0] is None:
             print("entering id parser",value)
             value = identifier_parser(value[1])
+            print("value[0] is:",value[0])
+            #if env[value[0]]['type'] == 'lambda':
+            #    print("yay")
             value[0] = env[value[0]]
 
         result = value[0]
