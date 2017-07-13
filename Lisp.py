@@ -15,7 +15,7 @@ operators = {
     "=": operator.eq
 }
 
-env = {'a': 547.0}
+env = {}
 keyword = []
 
 
@@ -25,10 +25,11 @@ def open_parentheses_parser(data):
         return [data[0],data[1:]]
  
 def close_parentheses_parser(data):
+    #print("data in close para:",data)
     if data[0] == ")":
         return [data[0],data[1:]]
     else:
-    	return [None,data]
+        return [None,data]
 
 def space_parser(data):
     space_value = re.findall("^[\s\n]",data)
@@ -52,10 +53,119 @@ def number_parser(data):
         return [int(parse_num[0]), data[pos-4:].strip()]
     except ValueError:
         return [float(parse_num[0]), data[pos-4:].strip()]
+'''
+const lambdaParser = input => {
+  let output = allParsers(openBracket, parseLambda, spaceParser, argumentsParser,
+                          spaceParser, bodyParser, closeBracket)(input)
+  if (output !== null) {
+    let [[, , , args, , body], rest] = output
+    let obj = {
+      type: 'lambda',
+      args: args,
+      body: body,
+      env: {}
+    }
+    return [obj, rest]
+  }
+  return null
+}'''
+def all_parsers(data,*parsers):
+    result = []
+    #print("entering all_parser",data,"and parsers are:",parsers)
+    for parser in parsers:
+        output = parser(data)
+        if output is None:
+            return None
+        result.append(output[0])
+        data = output[1]
+    #print("output of all_parser",result,"and remaining data:",data)
+    return[result,data]
+
+def parse_lambda(data):
+    #print("entering parse_lambda",data)
+    if data.startswith('lambda'):
+        return ['lambda',data[6:]]
+
+def arguments_parser(data):
+    result = []
+    output = open_parentheses_parser(data)
+    #print("entering arg parser:",output)
+    if output[0] is not None:
+        while output[1][0] != ")":
+            output = identifier_parser(output[1])
+            if output[0] is not None:
+                result.append(output[0])
+            output = space_parser(output[1])
+        output = close_parentheses_parser(output[1])
+        output = space_parser(output[1])
+    #print("output of arg parser:",result,"and",output[1])
+    return [result,output[1]]
+'''
+const bodyParser = input => {
+  let output = openBracket(input)
+  input = output[1]
+  let body = '('
+  let i = 1
+  let j = 0
+  let k = 0
+  while (i !== j) {
+    if (input[k] === '(') i++
+    if (input[k] === ')') j++
+    body = body + input[k]
+    k++
+  }
+  input = input.substring(k)
+  return [body, input]
+}'''
+
+def body_parser(data):
+    output = open_parentheses_parser(data)
+    #print("entering body parser:",output)
+    value = output[1]
+    body = output[0]
+    pos = 0
+    open_br = 1
+    while open_br != 0:
+        if value[pos] == "(": open_br += 1
+        if value[pos] == ")": open_br -= 1
+        body += value[pos]
+        pos += 1
+    #print("output of body_parser",body,"and",value[pos:])
+    return [body,value[pos:]]
+
+
+
+        
+
+
+
+    
+
+def lambda_parser(data):
+    output = all_parsers(data,open_parentheses_parser, parse_lambda, 
+                         space_parser, arguments_parser,space_parser, 
+                         body_parser,close_parentheses_parser)
+    #print("entering lambda and output is",output)
+    if output is not None:
+        args = output[0][3]
+        body = output[0][5]
+        obj = {
+        'type': 'lambda',
+        'objargs': args,
+        'objbody': body,
+        'env': {}        
+        }
+        unparsed = output[1]
+        #print("unparsed in lambda_parser",unparsed)
+        return [obj, unparsed]
+    return None
+
+
 
 def statement_parser(data):
     #'Parsed_data variable is just to display the first value in the return type.'
-    if(data[:6] == "define"):
+
+    if data[:6] == "define":
         keyword.append("define")
         #parsed_data = data[:6]
         unparsed_data = data[6:]
@@ -66,8 +176,11 @@ def statement_parser(data):
         #parsed_data += key[0]
         number_unparsed_data = space_parser(key[1])
         #parsed_data += number_unparsed_data[0]
-        value = number_parser(number_unparsed_data[1])
-        if value[0] == None:
+        value = lambda_parser(number_unparsed_data[1])
+        #print("value after lambda",value)
+        if value[0] is None:
+            value = number_parser(number_unparsed_data[1])
+        if value[0] is None:
             #print("entering op parser")
             value = open_parentheses_parser(value[1])
             value = operator_parser(value[1])
@@ -76,10 +189,12 @@ def statement_parser(data):
         env[key[0]] = value[0]
         #print("env is",env)
         value = space_parser(value[1])
+        #print("value before close para:",value)
         value = close_parentheses_parser(value[1])
         return [env,value[1]]
     else:
-        return [None,data]
+        #print("enter else in statement")
+        return [None,None]
     '''
     In the statement_parser return parsed data we are assigning only 'define'. Do we need to assign
     full expression
@@ -106,8 +221,8 @@ def identifier_parser(data):
     if id_index > index_temp:
         id_index = index_temp
     identifier = data[:id_index]
-    print("identifier is:",identifier)
-    if(identifier.isalpha()):
+    #print("identifier is:",identifier)
+    if(identifier.isalnum()):
         #print("id index is:",id_index)
         return[identifier,data[id_index:]]
     raise SyntaxError("Atleast one alpha character should present in identifier")
@@ -188,10 +303,10 @@ def program_parser(data):
         while data != '':
             parsed_data = parsers[temp](data)
             if parsed_data:
-                print("temp value:",temp)
+                #print("temp value:",temp)
                 print("parsed data are:",parsed_data[0])
                 data = parsed_data[1]
-                print("remaining data are:",data)
+                #print("remaining data are:",data)
             if(temp == 3): 
                 data = space_parser(data)
                 data = data[1]
