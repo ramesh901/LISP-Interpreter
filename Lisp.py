@@ -118,7 +118,7 @@ def lambda_parser(data):
         'type': 'lambda',
         'objargs': args,
         'objbody': body,
-        'env': {}        
+        'env_local': {}        
         }
         unparsed = output[1]
         #print("unparsed in lambda_parser",unparsed)
@@ -152,18 +152,49 @@ def identifier_parser(data):
     if(identifier.isalnum()):
         #print("id index is:",id_index)
         return[identifier,data[id_index:]]
-    return [None,data]
-    #raise SyntaxError("Atleast one alpha character should present in identifier")
+    #return [None,data]
+    raise SyntaxError("One alpha character should present in identifier")
 
 def evaluate(data):
+    #print("data to evaluate",data)
     if data[0] == 'list': return list(data[1:])
     if data[0] == 'car' : return data[1][0]
     if data[0] == 'cdr' : return data[1][1:]
     if data[0] == 'isList' : return isinstance(data[1],list)
+    operators.update(env)
+    user_function = operators[data[0]]
+    if type(user_function) == dict:
+        env_dict = user_function['env_local']
+        if user_function['type'] == 'lambda':
+            argument = user_function['objargs']
+            len_arg = len(argument)
+            #print("argument is",argument)
+            for i in range(len_arg):
+                env_dict[argument[i]] = data[i + 1]
+                env[argument[i]] = data[i+1]
+            #print("Operators are:",operators[data[0]])
+            value = eval_lambda(operators[data[0]])
+            return value
+    #print("operators are:",operators)
     #print("in evaluate reduce param 1:",operators[data[0]])
     #print("in evaluate reduce param 2:",data[1])
     return functools.reduce(operators[data[0]],data[1:])
-    
+
+''' eval_lambda Input: Dictionary
+    process: pass env_local values to objbody expression, evaluate it
+    and return the final result '''
+def eval_lambda(data):
+    #print("input data to eval_lambda:",data)
+    eval_arg = data['env_local']
+    eval_body = data['objbody']
+    #print("eval body before parse:",eval_body)
+    #print("global env is:",env)
+    eval_body = open_parentheses_parser(eval_body)
+    eval_body = operator_parser(eval_body[1])
+    #print("eval body:",eval_body)
+    return eval_body[0]
+
+
 def operator_parser(data):
     ops = ("+","-","*","/",">","<","=")
     #print("input data for op parser:",data[:5])
@@ -237,7 +268,6 @@ def parser_factory(data,*parsers):
 def statement_parser(data):
     #parser_factory(data,define_parser, print_parser)
     parsers = [define_parser, print_parser]
-    #'Parsed_data variable is just to display the first value in the return type.'
     for parser in parsers:
         output = parser(data)
         if (output[0] is not None):
@@ -353,6 +383,8 @@ def program_parser(data):
 if __name__ == '__main__':
     with open("text2","r") as f:
         data = f.read()
+    print(sys.version_info)
+    print(sys.version)
     print("Input data is:",data)
     #print("input data type is:",type(data))
     Interpreter = program_parser(data)
