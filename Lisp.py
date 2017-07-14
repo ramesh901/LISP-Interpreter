@@ -20,6 +20,7 @@ operators = {
 }
 
 env = {}
+global_local = {}
 
 def open_parentheses_parser(data):
     #print("enter open paranethesis",data)
@@ -156,12 +157,12 @@ def identifier_parser(data):
     raise SyntaxError("One alpha character should present in identifier")
 
 def evaluate(data):
-    #print("data to evaluate",data)
     if data[0] == 'list': return list(data[1:])
     if data[0] == 'car' : return data[1][0]
     if data[0] == 'cdr' : return data[1][1:]
     if data[0] == 'isList' : return isinstance(data[1],list)
     operators.update(env)
+    #print("operators in evaluate",operators)
     user_function = operators[data[0]]
     if type(user_function) == dict:
         env_dict = user_function['env_local']
@@ -171,7 +172,7 @@ def evaluate(data):
             #print("argument is",argument)
             for i in range(len_arg):
                 env_dict[argument[i]] = data[i + 1]
-                env[argument[i]] = data[i+1]
+                global_local[argument[i]] = data[i+1]
             #print("Operators are:",operators[data[0]])
             value = eval_lambda(operators[data[0]])
             return value
@@ -211,6 +212,7 @@ def operator_parser(data):
             return [None,data]
         element = env_key[0]
         data = env_key[1]
+    #print("data for arithmetic parser",data)
     parsed_data = arithmetic_parser(element,data)
     #print("parsed data in OPERATOR PARSER:",parsed_data[0])
     eval_data = evaluate(parsed_data[0])
@@ -236,7 +238,10 @@ def arithmetic_parser(element,data):
                 #print("data for identi parser:",data)
                 key = identifier_parser(data[1])
                 #print("key is",key)
-                number[0] = env[key[0]]
+                if key[0] in global_local:
+                    number[0] = global_local[key[0]]
+                else:
+                    number[0] = env[key[0]]
                 number[1] = key[1]
         #print("number is:",number)
         data = space_parser(number[1])
@@ -292,18 +297,19 @@ def print_parser(data):
     if data[:5] == "print":
         unparsed_data = data[5:]
         value = space_parser(unparsed_data)
-        #print("value in print parser",value)
         value = number_parser(value[1])
+        if value[0] is None and value[1][0:8] == "((lambda":
+            value = lambda_parser(value[1][1:])
+            env['lambda_in_print'] = value[0]
+            value[0] = 'lambda_in_print'
+            value = arithmetic_parser(value[0],value[1])
+            value[0] = evaluate(value[0])
+            #print("evaluate value is:",value)
         if value[0] is None and value[1][0] == "(":
-            #print("entering op parser",value)
             value = open_parentheses_parser(value[1])
             value = operator_parser(value[1])
         if value[0] is None:
-            #print("entering id parser",value)
             value = identifier_parser(value[1])
-            #print("value[0] is:",value[0])
-            #if env[value[0]]['type'] == 'lambda':
-            #    print("yay")
             value[0] = env[value[0]]
 
         result = value[0]
@@ -346,13 +352,8 @@ def define_parser(data):
         #print("value in define:",value)
         return [env,value[1]]
     else:
-        #print("enter else in statement")
-        return [None]
-    '''
-    In the statement_parser return parsed data we are assigning only 'define'. Do we need to assign
-    full expression
-    '''   
-
+        return [None,data]
+    
 def program_parser(data):
     parsers = [open_parentheses_parser, space_parser, 
               statement_parser]
