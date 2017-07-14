@@ -9,14 +9,14 @@ operators = {
     'abs':     abs,
     'append':  op.add,  
     'begin':   lambda *x: x[-1],
-    'car':     lambda x: x[0],
-    'cdr':     lambda x: x[1:], 
+    'car':     "dummy",
+    'cdr':     "dummy", 
     'cons':    lambda x,y: [x] + y,
     'map':     map,
     'max':     max,
     'min':     min,
-    'list':    lambda *x: list(x),
-    'isList':  lambda x: isinstance(x,list)
+    'list':    "dummy",
+    'isList':  "dummy"
 }
 
 env = {}
@@ -145,33 +145,52 @@ def identifier_parser(data):
     #print("input data for identifier_parser is:",data)
     id_index = data.find(" ")
     index_temp = data.find(")")
-    if id_index > index_temp:
+    if id_index > index_temp or id_index == -1:
         id_index = index_temp
     identifier = data[:id_index]
-    #print("identifier is:",identifier)
+    #print("id index",id_index,"index_temp",index_temp)
     if(identifier.isalnum()):
         #print("id index is:",id_index)
         return[identifier,data[id_index:]]
-    raise SyntaxError("Atleast one alpha character should present in identifier")
+    return [None,data]
+    #raise SyntaxError("Atleast one alpha character should present in identifier")
 
 def evaluate(data):
+    if data[0] == 'list': return list(data[1:])
+    if data[0] == 'car' : return data[1][0]
+    if data[0] == 'cdr' : return data[1][1:]
+    if data[0] == 'isList' : return isinstance(data[1],list)
+    #print("in evaluate reduce param 1:",operators[data[0]])
+    #print("in evaluate reduce param 2:",data[1])
     return functools.reduce(operators[data[0]],data[1:])
     
 def operator_parser(data):
-    if data[0] not in ("+","-","*","/"):
-        return[None,data]
+    ops = ("+","-","*","/",">","<","=")
+    #print("input data for op parser:",data[:5])
+    if data[0] in ops:
+        if data[1] == "=":
+            element = data[:2]
+            data = data[2:]
+        else:
+            element = data[0]
+            data = data[1:]
     else:
-        parsed_data = arithmetic_parser(data)
-        #print("parsed data in OPERATOR PARSER:",parsed_data)
-        eval_data = evaluate(parsed_data[0])
+        env_key = identifier_parser(data)
+        if env_key[0] is None:
+            return [None,data]
+        element = env_key[0]
+        data = env_key[1]
+    parsed_data = arithmetic_parser(element,data)
+    #print("parsed data in OPERATOR PARSER:",parsed_data[0])
+    eval_data = evaluate(parsed_data[0])
     return[eval_data,parsed_data[1]]
-
-def arithmetic_parser(data):
+    
+def arithmetic_parser(element,data):
     number = None
     parsed_array = []
-    parsed_array.append(data[0])
+    parsed_array.append(element)
     #print("parsed array adding multiply is:",parsed_array)
-    data = data[1:]
+    #data = data[1:]
     #print("input data for space parser in multiply_parser",data)
     while data[0] != ")" :
         #print("Data in while loop:",data)
@@ -183,6 +202,7 @@ def arithmetic_parser(data):
             number = number_parser(data[1])
             #print("assign number to number directly",number)
             if number[0] is None:
+                #print("data for identi parser:",data)
                 key = identifier_parser(data[1])
                 #print("key is",key)
                 number[0] = env[key[0]]
@@ -195,7 +215,7 @@ def arithmetic_parser(data):
         #data = data[1:]
         if data is '':
             return[parse,'']
-        #print("final data in multiply is:",parse,"and",data)
+        #print("FINAL DATA in multiply is:",parse,"and",data)
         #print('len of data in multiply:',len(data))
         data = data[1]
     return [parse, data[1:]]
@@ -245,19 +265,19 @@ def print_parser(data):
         #print("value in print parser",value)
         value = number_parser(value[1])
         if value[0] is None and value[1][0] == "(":
-            print("entering op parser",value)
+            #print("entering op parser",value)
             value = open_parentheses_parser(value[1])
             value = operator_parser(value[1])
         if value[0] is None:
-            print("entering id parser",value)
+            #print("entering id parser",value)
             value = identifier_parser(value[1])
-            print("value[0] is:",value[0])
+            #print("value[0] is:",value[0])
             #if env[value[0]]['type'] == 'lambda':
             #    print("yay")
             value[0] = env[value[0]]
 
         result = value[0]
-        print("VALUE IN PRINT PARSER",result)
+        #print("VALUE IN PRINT PARSER",result)
         #print("env in print_parser",env)
         value = space_parser(value[1])
         #print("value before close para:",value)
@@ -305,7 +325,7 @@ def define_parser(data):
 
 def program_parser(data):
     parsers = [open_parentheses_parser, space_parser, 
-              statement_parser,operator_parser]
+              statement_parser]
     temp = 0
     parsed_data = open_parentheses_parser(data)
     if parsed_data:
@@ -319,21 +339,21 @@ def program_parser(data):
                     print("parsed data are:",parsed_data[0])
                 data = parsed_data[1]
                 #print("remaining data are:",data)
-            if(temp == 3): 
+            if(temp == 2): 
                 data = space_parser(data)
                 data = data[1]
                 temp = -1
             #print("temp before reset",temp)
-            if(temp < 3): temp = temp + 1
+            if(temp < 2): temp = temp + 1
             #print("temp after reset",temp)
       
 
         return parsed_data[0]
 
 if __name__ == '__main__':
-    with open("text","r") as f:
+    with open("text2","r") as f:
         data = f.read()
     print("Input data is:",data)
-    print("input data type is:",type(data))
+    #print("input data type is:",type(data))
     Interpreter = program_parser(data)
     #print("Final value:",Interpreter)
