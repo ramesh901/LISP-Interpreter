@@ -1,18 +1,22 @@
 import re
 import sys
-import operator
+import operator as op
 import functools
 
 operators = {
-    "+": operator.add,
-    "-": operator.sub,
-    "*": operator.mul,
-    "/": operator.truediv,
-    ">": operator.gt,
-    "<": operator.lt,
-    ">=": operator.ge,
-    "<=": operator.le,
-    "=": operator.eq
+    "+": op.add, "-": op.sub, "*": op.mul, "/": op.truediv,
+    ">": op.gt, "<": op.lt, ">=": op.ge, "<=": op.le, "=": op.eq,
+    'abs':     abs,
+    'append':  op.add,  
+    'begin':   lambda *x: x[-1],
+    'car':     lambda x: x[0],
+    'cdr':     lambda x: x[1:], 
+    'cons':    lambda x,y: [x] + y,
+    'map':     map,
+    'max':     max,
+    'min':     min,
+    'list':    lambda *x: list(x),
+    'isList':  lambda x: isinstance(x,list)
 }
 
 env = {}
@@ -231,8 +235,10 @@ def print_parser(data):
         return [value, unparsed]
     return None
 '''
+#def function_parser(data):
 
-def  print_parser(data):
+
+def print_parser(data):
     if data[:5] == "print":
         unparsed_data = data[5:]
         value = space_parser(unparsed_data)
