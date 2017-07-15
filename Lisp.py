@@ -5,7 +5,7 @@ import functools
 
 operators = {
     "+": op.add, "-": op.sub, "*": op.mul, "/": op.truediv,
-    ">": op.gt, "<": op.lt, ">=": op.ge, "<=": op.le, "=": op.eq,
+    ">": op.gt, "<": op.lt, ">=": op.ge, "<=": op.le, "==": op.eq,
     'abs':     abs,
     'append':  op.add,  
     'begin':   lambda *x: x[-1],
@@ -48,9 +48,9 @@ def number_parser(data):
     #It counts brackets and quotes also in the length as ['123'].
     #To avoid it we are subtracting 4
     try:
-        return [int(parse_num[0]), data[pos-4:].strip()]
+        return [int(parse_num[0]), data[pos-4:]]
     except ValueError:
-        return [float(parse_num[0]), data[pos-4:].strip()]
+        return [float(parse_num[0]), data[pos-4:]]
 
 def all_parsers(data,*parsers):
     result = []
@@ -69,6 +69,10 @@ def parse_lambda(data):
 def parse_print(data):
     if data.startswith('print'):
         return ['print',data[5:]]
+
+def parse_if(data):
+    if data.startswith('if'):
+        return ['if',data[2:]]
 
 def arguments_parser(data):
     result = []
@@ -217,7 +221,7 @@ def expression_parser(data):
     parsers = [number_parser,operator_parser]
     for parser in parsers:
         output = parser(data)
-        if output is not None:
+        if output[0] is not None:
             return output
 
 def parser_factory(data,*parsers):
@@ -225,10 +229,23 @@ def parser_factory(data,*parsers):
         output = parser(data)
         if (output is not None):
             return output
-    
+
+def if_parser(data):
+    output = all_parsers(data, parse_if, space_parser, open_parentheses_parser, expression_parser,
+                          space_parser, expression_parser, space_parser,
+                          expression_parser, close_parentheses_parser) 
+    if output is not None:
+        test = output[0][3]
+        conseq = output[0][5]
+        alt = output[0][7]
+        if test:
+            return[conseq,output[1]]
+        else:
+            return[alt,output[1]]
+    return [None,data]
     
 def statement_parser(data):
-    parsers = [define_parser, print_parser]
+    parsers = [define_parser, print_parser, if_parser]
     for parser in parsers:
         output = parser(data)
         if (output[0] is not None):
@@ -256,7 +273,9 @@ def print_parser(data):
         value = space_parser(value[1])
         value = close_parentheses_parser(value[1])
         value = space_parser(value[1])
-    return [result,value[1]]
+        return [result,value[1]]
+    else:
+        return [None,data]
 
 def define_parser(data):
     if data[:6] == "define":
