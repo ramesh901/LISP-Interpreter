@@ -25,13 +25,15 @@ global_local = {}
 def open_parentheses_parser(data):
     if data[0] == "(":
         return [data[0],data[1:]]
+    else:
+        return [None,data]
  
 def close_parentheses_parser(data):
     if data[0] == ")":
         return [data[0],data[1:]]
     
 def space_parser(data):
-    space_value = re.findall("^[\s\n]",data)
+    space_value = re.findall("^[\s]",data)
     if space_value:
         space_len = len(space_value[0])
         return data[:space_len],data[space_len:]
@@ -171,7 +173,6 @@ def eval_lambda(data):
     eval_body = operator_parser(eval_body[1])
     return eval_body[0]
 
-
 def operator_parser(data):
     ops = ("+","-","*","/",">","<","=")
     if data[0] in ops:
@@ -231,19 +232,13 @@ def if_parser(data):
         test = output[0][3]
         conseq = output[0][5]
         alt = output[0][7]
+        output = space_parser(output[1])
         if test:
             return[conseq,output[1]]
         else:
             return[alt,output[1]]
     return [None,data]
     
-def statement_parser(data):
-    parsers = [define_parser, print_parser, if_parser]
-    for parser in parsers:
-        output = parser(data)
-        if (output[0] is not None):
-            return output
-
 def print_parser(data):
     if data[:5] == "print":
         unparsed_data = data[5:]
@@ -281,11 +276,10 @@ def define_parser(data):
             value = number_parser(number_unparsed_data[1])
         if value[0] is None:
             opvalue = open_parentheses_parser(value[1])
-            if opvalue is None:
+            if opvalue[0] is None:
                 value = string_parser(value[1])
             else:
                 value = operator_parser(opvalue[1])
-        
         env[key[0]] = value[0]
         value = space_parser(value[1])
         value = close_parentheses_parser(value[1])
@@ -293,31 +287,29 @@ def define_parser(data):
         return [env,value[1]]
     else:
         return [None,data]
-    
-def program_parser(data):
-    parsers = [open_parentheses_parser, space_parser, 
-              statement_parser]
-    temp = 0
-    parsed_data = open_parentheses_parser(data)
-    if parsed_data:
-        while data != '':
-            parsed_data = parsers[temp](data)
-            if parsed_data:
-                if parsed_data[0] not in ("(", None):
-                    print("parsed data are:",parsed_data[0])
-                data = parsed_data[1]
-            if(temp == 2): 
-                data = space_parser(data)
-                data = data[1]
-                temp = -1
-            if(temp < 2): temp = temp + 1
-        return parsed_data[0]
 
+def statement_parser(data):
+    parsers = [open_parentheses_parser,space_parser, define_parser, 
+               print_parser, if_parser]
+    for parser in parsers:
+        output = parser(data)
+        if output[0] is not None:
+            data = output[1]
+            if parser not in [open_parentheses_parser,space_parser]:
+                return output
+            
+def program_parser(data):
+    while data != '':
+        parsed_data = statement_parser(data)
+        if parsed_data:
+            print("parsed data are:",parsed_data[0])
+            data = parsed_data[1]
+            
 if __name__ == '__main__':
     with open("text2","r") as f:
         data = f.read()
     print(sys.version_info)
     print(sys.version)
     print("Input data is:",data)
-    Interpreter = program_parser(data)
+    program_parser(data)
     
