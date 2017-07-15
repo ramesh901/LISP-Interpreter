@@ -38,6 +38,26 @@ def space_parser(data):
     else:
         return [None,data]
 
+def string_parser(data):
+    if data[0] == '"':
+        data = data[1:]
+        slash_pos = data.find('\\')
+        pos = data.find('"')
+        temp_pos = 0
+        while True:
+            pos = pos + temp_pos
+            #print("data in pos is(approx 5 chars):",data[pos:pos +5])
+            #print("pos is:",pos)
+            #print("data in data[pos-1]",data[pos-1])
+            if data[pos-1] != '\\':
+                #print("parsed data in url string",data[:pos])
+                return [data[:pos], data[pos + 1:].strip()]
+            else:
+                temp = data[pos + 1:]
+                #print("Temp data in string parser(approx 5 chars):",temp[:5])
+                temp_pos = temp.find('"') + 1
+                #print("temp pos value:",temp_pos)
+
 def number_parser(data):
     parse_num = re.findall("^(-?(?:\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)",
                             data)
@@ -287,8 +307,12 @@ def define_parser(data):
         if value[0] is None:
             value = number_parser(number_unparsed_data[1])
         if value[0] is None:
-            value = open_parentheses_parser(value[1])
-            value = operator_parser(value[1])
+            opvalue = open_parentheses_parser(value[1])
+            if opvalue is None:
+                value = string_parser(value[1])
+            else:
+                value = operator_parser(opvalue[1])
+        
         env[key[0]] = value[0]
         value = space_parser(value[1])
         value = close_parentheses_parser(value[1])
