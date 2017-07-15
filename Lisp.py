@@ -46,17 +46,12 @@ def string_parser(data):
         temp_pos = 0
         while True:
             pos = pos + temp_pos
-            #print("data in pos is(approx 5 chars):",data[pos:pos +5])
-            #print("pos is:",pos)
-            #print("data in data[pos-1]",data[pos-1])
             if data[pos-1] != '\\':
-                #print("parsed data in url string",data[:pos])
                 return [data[:pos], data[pos + 1:].strip()]
             else:
                 temp = data[pos + 1:]
-                #print("Temp data in string parser(approx 5 chars):",temp[:5])
                 temp_pos = temp.find('"') + 1
-                #print("temp pos value:",temp_pos)
+                
 
 def number_parser(data):
     parse_num = re.findall("^(-?(?:\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?)",
@@ -136,22 +131,6 @@ def lambda_parser(data):
         unparsed = output[1]
         return [obj, unparsed]
     return [None,data]
-
-def parser_factory(data,*parsers):
-    for parser in parsers:
-        output = parser(data)
-        if output is not None:
-            return output
-    return None
-
-def check_type(data,env):
-    if isinstance(data,str):
-        if env is not None:
-            data = env[data]
-    elif ENV[data] is not None:
-        input = ENV[input]
-    elif (ENV[data] is None):
-        raise SyntaxError("input is undefined")
 
 def identifier_parser(data):
     id_index = data.find(" ")
@@ -242,12 +221,6 @@ def expression_parser(data):
     for parser in parsers:
         output = parser(data)
         if output[0] is not None:
-            return output
-
-def parser_factory(data,*parsers):
-    for parser in parsers:
-        output = parser(data)
-        if (output is not None):
             return output
 
 def if_parser(data):
